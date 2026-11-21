@@ -693,7 +693,7 @@ our FN = 5 x FP cost model.
 
 TreeSHAP gives exact per-patient contributions for the forest: the model's baseline plus the
 contributions equals the prediction. Those numbers, with WHO / ADA / Asian-Indian clinical bands, form
-a structured prompt; Claude writes a four-section plain-language summary; the server appends a fixed
+a structured prompt; Gemini writes a four-section plain-language summary; the server appends a fixed
 clinician-review disclaimer. Without an API key the same SHAP values feed a deterministic template,
 and the output says which writer produced it.
 """)

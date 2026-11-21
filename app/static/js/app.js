@@ -96,7 +96,7 @@
       state.llm = res.ok ? await res.json() : null;
     } catch (e) { state.llm = null; }
     const on = state.llm && state.llm.available;
-    $("meta-llm").textContent = on ? "Claude · on" : "Template";
+    $("meta-llm").textContent = on ? "Gemini · on" : "Template";
     const badge = $("llm-status-badge");
     badge.textContent = on ? `LLM connected · ${state.llm.model}` : "No API key — template fallback active";
     badge.className = "badge " + (on ? "badge-good" : "badge-warning");
@@ -630,7 +630,7 @@
         xlabel: "Prevalence in the screened population", ylabel: "Precision", xDomain: [0, 0.6], yDomain: [0, 0.9], height: 300,
         fmtX: v => (v * 100).toFixed(0) + "%"
       });
-      $("tbl-transport").innerHTML = tr.map((s, i) => `<tr><td class="name"><span class="swatch" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${colors[i]};margin-right:7px"></span>${s.name}</td>
+      $("tbl-transport").innerHTML = tr.map((s, i) => `<tr><td class="name" style="white-space:nowrap"><span class="swatch" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${colors[i]};margin-right:8px"></span>${s.name}</td>
         <td class="num">${pct(s.prevalence, 1)}</td>
         <td class="num"><span class="badge ${s.meets_precision_guard ? "badge-good" : "badge-critical"}">${pct(s.precision, 0)}</span></td>
         <td class="num">${int(s.per_10k_missed)}</td><td class="num">${int(s.per_10k_false_alarms)}</td><td class="num">${s.tests_per_case_found}</td></tr>`).join("");
@@ -720,7 +720,7 @@
 
   async function loadRandomPatient() {
     const btn = $("btn-random");
-    btn.disabled = true; btn.textContent = "Loading…";
+    btn.disabled = true; btn.querySelector(".btn-label").textContent = "Loading…";
     try {
       const res = await fetch("/api/patient/random", { cache: "no-store" });
       if (!res.ok) throw new Error("unavailable");
@@ -733,7 +733,7 @@
     } catch (e) {
       $("truth-note").innerHTML = `<div class="callout warning"><div class="ct">Server not reachable</div>Start it with <code>python app/app.py</code>.</div>`;
     } finally {
-      btn.disabled = false; btn.textContent = "Load a real held-out patient";
+      btn.disabled = false; btn.querySelector(".btn-label").textContent = "Load a real held-out patient";
     }
   }
 
@@ -871,7 +871,7 @@
       return;
     }
     btn.disabled = true;
-    $("ai-out").innerHTML = `<div class="ai-empty"><span class="typing"><i></i><i></i><i></i></span>&nbsp; ${state.llm && state.llm.available ? "Claude is writing the explanation from the SHAP values…" : "Building the explanation…"}</div>`;
+    $("ai-out").innerHTML = `<div class="ai-empty"><span class="typing"><i></i><i></i><i></i></span>&nbsp; ${state.llm && state.llm.available ? "Gemini is writing the explanation from the SHAP values…" : "Building the explanation…"}</div>`;
     try {
       const res = await fetch("/api/explain", {
         method: "POST", headers: { "Content-Type": "application/json" },

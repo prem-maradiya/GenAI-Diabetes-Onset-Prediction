@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Diabetes Risk Screener</title>
 <meta name="description" content="Recall-first diabetes onset screening with a generative AI explanation layer.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="preload" href="{{ url_for('static', filename='fonts/inter-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{{ url_for('static', filename='fonts/jakarta-var.woff2') }}" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232a78d6'/><path d='M22 56 h14 l8 -20 l12 38 l9 -22 h13' stroke='white' stroke-width='8' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <script>
@@ -16,13 +15,44 @@
 </script>
 </head>
 <body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-dashboard" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="m16 16-1.9-1.9"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96L15.5 14.06a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></symbol>
+  <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+  <symbol id="i-present" viewBox="0 0 24 24"><path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="i-userx" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" x2="22" y1="8" y2="13"/><line x1="22" x2="17" y1="8" y2="13"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.17-2.83L3 3"/><path d="m15 9 6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+</svg>
 <div class="tooltip" id="tooltip"></div>
 
 <div class="shell">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h4l2-5 3 10 2-6h7"/></svg>
+        <svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg>
       </div>
       <div class="brand-text">
         <div class="t">Diabetes Risk Screener</div>
@@ -39,20 +69,20 @@
 
     <nav class="nav" id="nav">
       <div class="nav-label">The story</div>
-      <a href="#overview" class="active"><span class="num">◆</span> Overview</a>
-      <a href="#data"><span class="num">1</span> Data &amp; Cleaning</a>
-      <a href="#performance"><span class="num">2</span> Model &amp; Evaluation</a>
-      <a href="#lab"><span class="num">3</span> Threshold Lab</a>
-      <a href="#importance"><span class="num">4</span> Explainability</a>
-      <a href="#genai"><span class="num">5</span> Generative AI <span class="tag">GENAI</span></a>
+      <a href="#overview" class="active"><svg class="ic" aria-hidden="true"><use href="#i-dashboard"/></svg><span class="nl">Overview</span></a>
+      <a href="#data"><svg class="ic" aria-hidden="true"><use href="#i-database"/></svg><span class="nl">Data &amp; Cleaning</span><span class="step">01</span></a>
+      <a href="#performance"><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg><span class="nl">Model &amp; Evaluation</span><span class="step">02</span></a>
+      <a href="#lab"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg><span class="nl">Threshold Lab</span><span class="step">03</span></a>
+      <a href="#importance"><svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg><span class="nl">Explainability</span><span class="step">04</span></a>
+      <a href="#genai"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg><span class="nl">Generative AI</span><span class="tag">GenAI</span></a>
       <div class="nav-label">Demo &amp; ethics</div>
-      <a href="#predictor"><span class="num">▶</span> Live Predictor</a>
-      <a href="#impact"><span class="num">6</span> Impact, Ethics &amp; India</a>
+      <a href="#predictor"><svg class="ic" aria-hidden="true"><use href="#i-stethoscope"/></svg><span class="nl">Live Predictor</span><span class="live-dot" title="Live demo"></span></a>
+      <a href="#impact"><svg class="ic" aria-hidden="true"><use href="#i-scale"/></svg><span class="nl">Impact, Ethics &amp; India</span><span class="step">06</span></a>
     </nav>
 
     <div class="side-foot">
       Pima Indians Diabetes Database · UCI / NIDDK · 768 patients
-      <div class="keys"><kbd>←</kbd><kbd>→</kbd> sections <kbd>P</kbd> present <kbd>T</kbd> theme</div>
+      <div class="keys"><span><kbd>←</kbd><kbd>→</kbd> sections</span><span><kbd>P</kbd> present</span><span><kbd>T</kbd> theme</span></div>
     </div>
   </aside>
 
@@ -61,7 +91,7 @@
       <div class="wrap tb-inner">
         <div style="display:flex;gap:12px;align-items:center;min-width:0">
           <button class="icon-btn menu-btn" id="btn-menu" aria-label="Open navigation">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            <svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg>
           </button>
           <div style="min-width:0">
             <div class="tb-step" id="view-step">Overview</div>
@@ -71,10 +101,10 @@
         </div>
         <div class="tb-actions">
           <button class="icon-btn" id="btn-theme" title="Toggle light / dark (T)" aria-label="Toggle theme">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+            <svg class="ic theme-dark-ic" aria-hidden="true"><use href="#i-moon"/></svg><svg class="ic theme-light-ic" aria-hidden="true"><use href="#i-sun"/></svg>
           </button>
           <button class="icon-btn" id="btn-present" title="Presentation mode (P)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+            <svg class="ic" aria-hidden="true"><use href="#i-present"/></svg>
             <span class="label-text">Present</span>
           </button>
         </div>
@@ -90,22 +120,22 @@
           <h2>A screening model that would rather call you back than miss you</h2>
           <p class="lede" id="ov-story">—</p>
           <div class="hero-kpis">
-            <div class="hk good"><div class="l">Test recall</div><div class="v" id="ov-recall">—</div><div class="f" id="ov-recall-ci">—</div></div>
-            <div class="hk crit"><div class="l">Cases missed</div><div class="v" id="ov-missed">—</div><div class="f" id="ov-missed-foot">—</div></div>
-            <div class="hk blue"><div class="l">ROC-AUC</div><div class="v" id="ov-auc">—</div><div class="f" id="ov-auc-ci">—</div></div>
-            <div class="hk violet"><div class="l">Generative layers</div><div class="v">2</div><div class="f">CTGAN / TVAE synthetic patients · LLM risk explanations</div></div>
+            <div class="hk good"><div class="l"><svg class="ic" aria-hidden="true"><use href="#i-target"/></svg>Test recall</div><div class="v" id="ov-recall">—</div><div class="f" id="ov-recall-ci">—</div></div>
+            <div class="hk crit"><div class="l"><svg class="ic" aria-hidden="true"><use href="#i-userx"/></svg>Cases missed</div><div class="v" id="ov-missed">—</div><div class="f" id="ov-missed-foot">—</div></div>
+            <div class="hk blue"><div class="l"><svg class="ic" aria-hidden="true"><use href="#i-trend"/></svg>ROC-AUC</div><div class="v" id="ov-auc">—</div><div class="f" id="ov-auc-ci">—</div></div>
+            <div class="hk violet"><div class="l"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg>Generative layers</div><div class="v">2</div><div class="f">CTGAN / TVAE synthetic patients · LLM risk explanations</div></div>
           </div>
         </div>
 
         <div class="block-title"><h2>How it works</h2><span class="sub">Every stage writes a named artefact; one command rebuilds them all</span></div>
         <div class="flow">
-          <div class="fnode"><div class="fi">1</div><div class="ft">Load &amp; audit</div><div class="fd">768 patients, 8 measurements</div></div>
-          <div class="fnode"><div class="fi">2</div><div class="ft">Repair zeros</div><div class="fd" id="ov-repaired-fd">652 impossible zeros → missing</div></div>
-          <div class="fnode gen"><div class="fi">G1</div><div class="ft">Synthetic patients</div><div class="fd">CTGAN · TVAE · Copula vs SMOTE</div></div>
-          <div class="fnode"><div class="fi">3</div><div class="ft">7 models, 5-fold CV</div><div class="fd">Imputer inside the pipeline</div></div>
-          <div class="fnode"><div class="fi">4</div><div class="ft">Recall-first cut-off</div><div class="fd">Max recall, precision ≥ 0.50</div></div>
-          <div class="fnode"><div class="fi">5</div><div class="ft">SHAP explanation</div><div class="fd">Exact TreeSHAP per patient</div></div>
-          <div class="fnode gen"><div class="fi">G2</div><div class="ft">LLM summary</div><div class="fd">Plain language + clinician disclaimer</div></div>
+          <div class="fnode"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-database"/></svg><span class="fn">1</span></div><div class="ft">Load &amp; audit</div><div class="fd">768 patients, 8 measurements</div></div>
+          <div class="fnode"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span class="fn">2</span></div><div class="ft">Repair zeros</div><div class="fd" id="ov-repaired-fd">652 impossible zeros → missing</div></div>
+          <div class="fnode gen"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg><span class="fn">G1</span></div><div class="ft">Synthetic patients</div><div class="fd">CTGAN · TVAE · Copula vs SMOTE</div></div>
+          <div class="fnode"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-cpu"/></svg><span class="fn">3</span></div><div class="ft">7 models, 5-fold CV</div><div class="fd">Imputer inside the pipeline</div></div>
+          <div class="fnode"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg><span class="fn">4</span></div><div class="ft">Recall-first cut-off</div><div class="fd">Max recall, precision ≥ 0.50</div></div>
+          <div class="fnode"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg><span class="fn">5</span></div><div class="ft">SHAP explanation</div><div class="fd">Exact TreeSHAP per patient</div></div>
+          <div class="fnode gen"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg><span class="fn">G2</span></div><div class="ft">LLM summary</div><div class="fd">Plain language + clinician disclaimer</div></div>
         </div>
 
         <div class="grid g-3-2 mt-lg">
@@ -117,7 +147,7 @@
                 <thead><tr><th>Jury asked for</th><th>What we built</th><th>Where</th></tr></thead>
                 <tbody>
                   <tr><td class="name">A generative AI component</td><td>Two: CTGAN / TVAE synthetic patients, and an LLM that writes the risk explanation</td><td><a href="#genai">Generative AI</a></td></tr>
-                  <tr><td class="name">LLM explanations from SHAP</td><td>SHAP values + clinical bands → Claude → plain-language summary, clinician-review disclaimer always appended</td><td><a href="#predictor">Live Predictor</a></td></tr>
+                  <tr><td class="name">LLM explanations from SHAP</td><td>SHAP values + clinical bands → Gemini → plain-language summary, clinician-review disclaimer always appended</td><td><a href="#predictor">Live Predictor</a></td></tr>
                   <tr><td class="name">CTGAN vs SMOTE vs none</td><td>Six variants on identical folds, generators fitted inside each training fold; realism and privacy audit</td><td><a href="#genai">Generative AI</a></td></tr>
                   <tr><td class="name">Precision / F1 / confusion at 0.28, calibration</td><td>Full operating-point metrics with 95% bootstrap CIs, calibration curve, Brier, decision curve</td><td><a href="#performance">Model &amp; Evaluation</a></td></tr>
                   <tr><td class="name">Imputation inside CV</td><td>Median imputer is a <code>Pipeline</code> step, refitted on every training fold</td><td><a href="#data">Data &amp; Cleaning</a></td></tr>
@@ -524,11 +554,11 @@
             <span class="badge badge-violet" id="llm-status-badge">checking…</span>
           </div>
           <div class="flow" style="grid-template-columns:repeat(5,minmax(0,1fr))">
-            <div class="fnode"><div class="fi">1</div><div class="ft">Patient → forest</div><div class="fd">Probability vs the 0.28 cut-off</div></div>
-            <div class="fnode"><div class="fi">2</div><div class="ft">TreeSHAP</div><div class="fd">Exact contributions; they sum to the prediction</div></div>
-            <div class="fnode"><div class="fi">3</div><div class="ft">Structured prompt</div><div class="fd">Numbers + WHO / ADA / Asian-Indian bands only</div></div>
-            <div class="fnode gen"><div class="fi">G2</div><div class="ft">Claude writes</div><div class="fd">Four fixed sections, no diagnosis, no drugs</div></div>
-            <div class="fnode"><div class="fi">5</div><div class="ft">Safety layer</div><div class="fd">Disclaimer appended; template fallback offline</div></div>
+            <div class="fnode"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-stethoscope"/></svg><span class="fn">1</span></div><div class="ft">Patient → forest</div><div class="fd">Probability vs the 0.28 cut-off</div></div>
+            <div class="fnode"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg><span class="fn">2</span></div><div class="ft">TreeSHAP</div><div class="fd">Exact contributions; they sum to the prediction</div></div>
+            <div class="fnode"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-file"/></svg><span class="fn">3</span></div><div class="ft">Structured prompt</div><div class="fd">Numbers + WHO / ADA / Asian-Indian bands only</div></div>
+            <div class="fnode gen"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-msg"/></svg><span class="fn">G2</span></div><div class="ft">Gemini writes</div><div class="fd">Four fixed sections, no diagnosis, no drugs</div></div>
+            <div class="fnode"><div class="fi"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><span class="fn">5</span></div><div class="ft">Safety layer</div><div class="fd">Disclaimer appended; template fallback offline</div></div>
           </div>
           <div class="grid g3 mt">
             <div class="callout"><div class="ct">Grounded</div>The model receives only computed values and recognised clinical cut-offs, and is instructed never to invent a statistic.</div>
@@ -552,9 +582,9 @@
             <div class="card-sub">Coloured chips show the clinical reference band for each value</div>
             <div id="pred-fields"></div>
             <div class="btn-row">
-              <button class="btn btn-primary" id="btn-random">Load a real held-out patient</button>
-              <button class="btn" id="btn-reset">Reset to median</button>
-              <button class="btn" id="btn-highrisk">High-risk example</button>
+              <button class="btn btn-primary" id="btn-random"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg><span class="btn-label">Load a real held-out patient</span></button>
+              <button class="btn" id="btn-reset"><svg class="ic" aria-hidden="true"><use href="#i-reset"/></svg><span class="btn-label">Reset to median</span></button>
+              <button class="btn" id="btn-highrisk"><svg class="ic" aria-hidden="true"><use href="#i-alert"/></svg><span class="btn-label">High-risk example</span></button>
             </div>
             <div id="truth-note" class="mt"></div>
           </div>
@@ -586,8 +616,8 @@
                   <div class="ai-meta" id="ai-meta"><span class="badge badge-violet">Generative layer</span></div>
                 </div>
                 <button class="btn btn-ai" id="btn-explain">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
-                  Explain with AI
+                  <svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>
+                  <span class="btn-label">Explain with AI</span>
                 </button>
               </div>
               <div id="ai-out"><div class="ai-empty">Press <strong>Explain with AI</strong> to turn this prediction and its SHAP values into a plain-language summary.</div></div>
@@ -621,12 +651,6 @@
             <h3>Would this work for Indian patients?</h3>
             <div class="card-sub">Recall carries over under a prevalence shift; precision does not</div>
             <div class="chart" id="chart-transport"></div>
-            <div class="table-wrap mt">
-              <table>
-                <thead><tr><th>Population</th><th class="num">Prevalence</th><th class="num">Precision</th><th class="num">Missed / 10k</th><th class="num">False alarms / 10k</th><th class="num">Tests per case</th></tr></thead>
-                <tbody id="tbl-transport"></tbody>
-              </table>
-            </div>
           </div>
           <div class="grid">
             <div class="card">
@@ -643,6 +667,17 @@
               <h3>External validation</h3>
               <div id="external-out"></div>
             </div>
+          </div>
+        </div>
+
+        <div class="card mt">
+          <h3>The same operating point in four populations</h3>
+          <div class="card-sub">Sensitivity and specificity from the test set, carried to each prevalence (per 10,000 screened)</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Population</th><th class="num">Prevalence</th><th class="num">Precision</th><th class="num">Missed / 10k</th><th class="num">False alarms / 10k</th><th class="num">Tests per case found</th></tr></thead>
+              <tbody id="tbl-transport"></tbody>
+            </table>
           </div>
         </div>
 
@@ -679,10 +714,10 @@
 </div>
 
 <div class="pager" id="pager">
-  <button id="pg-prev" aria-label="Previous section">←</button>
+  <button id="pg-prev" aria-label="Previous section"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
   <span class="pg" id="pg-count">1 / 8</span>
-  <button id="pg-next" aria-label="Next section">→</button>
-  <button id="pg-exit" aria-label="Exit presentation" title="Exit (P)">✕</button>
+  <button id="pg-next" aria-label="Next section"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
+  <button id="pg-exit" aria-label="Exit presentation" title="Exit (P)"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
 </div>
 
 <script src="{{ url_for('static', filename='js/charts.js') }}"></script>

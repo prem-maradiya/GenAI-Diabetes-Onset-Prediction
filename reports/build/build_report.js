@@ -77,7 +77,7 @@ const page1 = [
   table(["Recall (95% CI)", "Missed cases", "ROC-AUC", "Generative layers"], [
     [`${pct(t.recall)}  [${pct(ci.recall.lo)} - ${pct(ci.recall.hi)}]`, `${t.fn} of 54 (was ${d.fn})`, `${f3(t.roc_auc)}`, "CTGAN / TVAE  ·  LLM"]
   ], [2700, 2350, 1800, 2896], { size: 21, boldRow: () => true, color: (r, i) => i === 0 ? GREEN : i === 1 ? RED : NAVY }),
-  new Paragraph({ spacing: { before: 700 }, alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Dataset: Pima Indians Diabetes Database (UCI / NIDDK)  ·  Tools: Python, scikit-learn, SDV, SHAP, Claude, Flask", size: 19, color: MUTED })] }),
+  new Paragraph({ spacing: { before: 700 }, alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Dataset: Pima Indians Diabetes Database (UCI / NIDDK)  ·  Tools: Python, scikit-learn, SDV, SHAP, Gemini, Flask", size: 19, color: MUTED })] }),
   new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "November 2026", size: 19, color: MUTED })] }),
   pageBreak()
 ];
@@ -147,7 +147,7 @@ const page4 = [
     [2700, 1400, 1550, 1300, 1196, 1600], { boldFirst: true, numeric: true }),
   P([B("Finding. "), "No generator beat class weighting (0.916 recall). CTGAN was worst (0.878, eight more missed): about 170 diabetic patients per fold is too few for a GAN, and its samples are easy to spot (discriminator AUC 0.93). The deployed model trains on real patients only."], { spacing: { before: 120 } }),
   H2("3.5 Generative layer 2 - LLM explanations from SHAP"),
-  P("For each patient, exact TreeSHAP contributions are computed (model baseline + contributions = prediction). These values, together with WHO / ADA glucose and blood-pressure bands and Asian-Indian BMI cut-offs, form a structured prompt. Claude (claude-opus-5-5, low effort, with server-side refusal fallback) writes a four-part summary: what the screen found, what is driving it, what could help, and the next step."),
+  P("For each patient, exact TreeSHAP contributions are computed (model baseline + contributions = prediction). These values, together with WHO / ADA glucose and blood-pressure bands and Asian-Indian BMI cut-offs, form a structured prompt. Google Gemini (Flash model via Vertex AI) writes a four-part summary: what the screen found, what is driving it, what could help, and the next step."),
   bullet([B("Grounded: "), "the model receives only computed numbers and is instructed never to invent statistics."]),
   bullet([B("Bounded: "), "it may not diagnose, prescribe medication or blame non-modifiable factors."]),
   bullet([B("Safe and honest: "), "a clinician-review disclaimer is appended by the server to every response; without an API key or network, a deterministic template built from the same SHAP values is used and labelled as such."]),
@@ -167,7 +167,7 @@ const page5 = [
     ["Domain rule + Pipeline", "src/preprocess.py, src/train.py - zeros to NaN; SimpleImputer(median) -> RandomForestClassifier"],
     ["Threshold + evaluation", "src/train.py, src/evaluate.py, src/rigour.py - out-of-fold tuning, bootstrap CIs, calibration, decision curve"],
     ["G1 synthetic patients", "src/synthetic.py - SDV CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer vs imblearn SMOTE"],
-    ["TreeSHAP + G2 LLM", "src/genai_explain.py - shap.TreeExplainer, structured prompt, Anthropic SDK, disclaimer, template fallback"],
+    ["TreeSHAP + G2 LLM", "src/genai_explain.py - shap.TreeExplainer, structured prompt, Google Gen AI SDK (Vertex AI), disclaimer, template fallback"],
     ["Flask API + dashboard", "app/app.py, app/templates, app/static - /api/predict, /api/explain, eight-view dashboard"]
   ], [2700, 7046], { boldFirst: true }),
   pageBreak()
@@ -217,7 +217,7 @@ const page10 = [
   P("Inputs show clinical reference bands. The high-risk example scores 92.6% and is flagged; the SHAP waterfall sums exactly from the 50% baseline; Explain with AI produces the four-part summary with the clinician-review disclaimer.", { spacing: { after: 60 } }),
   predRow,
   caption("Screenshot 7. Live Predictor - inputs (left), prediction, SHAP and AI explanation (right)"),
-  ...shot("Step 8 - Check impact and validity for India", "Precision at the deployed cut-off across prevalences, the ICMR-INDIAB scenario and the re-validation protocol.", path.join(ASSETS, "india.png"), 4.6, 2.5, "Screenshot 8. Impact, Ethics & India view")
+  ...shot("Step 8 - Check impact and validity for India", "The deployed operating point carried to Indian prevalences: precision falls below the 0.50 guard, so the threshold must be re-tuned.", path.join(ASSETS, "india.png"), 6.3, 2.0, "Screenshot 8. Impact, Ethics & India view")
 ];
 
 const doc = new Document({

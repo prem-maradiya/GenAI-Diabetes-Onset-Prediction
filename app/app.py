@@ -31,7 +31,7 @@ import pandas as pd
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from config import (
-    CLINICAL_RANGES, FEATURE_META, FEATURES, LLM_MODEL, METRICS_PATH, MODEL_CARD_PATH, MODEL_PATH,
+    CLINICAL_RANGES, FEATURE_META, FEATURES, LLM_PROVIDER, METRICS_PATH, MODEL_CARD_PATH, MODEL_PATH,
 )
 from data_loader import load_raw
 from genai_explain import explain_patient, llm_available, shap_contributions
@@ -198,7 +198,7 @@ def api_explain():
 
 @app.route("/api/llm-status")
 def api_llm_status():
-    return jsonify({"available": llm_available(), "model": LLM_MODEL})
+    return jsonify({"available": llm_available(), "model": LLM_PROVIDER})
 
 
 @app.route("/health")

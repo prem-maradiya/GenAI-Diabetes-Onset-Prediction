@@ -98,8 +98,17 @@ def clinical_band(feature: str, value: float) -> dict | None:
 
 
 # Generative layer: the LLM that writes the patient-friendly explanation.
-# Read from the environment so no key ever lives in the repository.
-LLM_MODEL = os.environ.get("DIABETES_LLM_MODEL", "claude-opus-5-5")
+# Google Gemini via Vertex AI express mode (or a Gemini API key). The key is read
+# from the environment / a git-ignored .env file, so it never lives in the repo.
+# Model IDs change over time: the first candidate the key can use is kept, and
+# GEMINI_MODEL in .env overrides the list.
+LLM_PROVIDER = "Gemini"
+LLM_MODEL_CANDIDATES = [
+    "gemini-3.5-flash",
+    "gemini-3-flash",
+    "gemini-3-flash-preview",
+    "gemini-2.5-flash",
+]
 
 RANDOM_STATE = 42
 TEST_SIZE = 0.20

@@ -139,7 +139,7 @@ s = slide("CONTENT", "Opening", "What we changed after the Jury 2 review",
   "SPEAKER: Suvesha (0:45).\nAt Jury 2 you gave us five concrete asks. Every one of them is now a working part of the system, and we will show each live. The biggest: the project now has two generative components - CTGAN and TVAE synthetic patients, and an LLM that turns SHAP values into a patient-friendly explanation with a clinician-review disclaimer.");
 const rows2 = [
   ["Add a generative AI component", "Two layers: CTGAN / TVAE synthetic patients, and an LLM risk explanation", "Slides 11-14"],
-  ["LLM explanation from SHAP + disclaimer", "Exact TreeSHAP -> structured prompt -> Claude -> 4-part summary; disclaimer added by the server", "Slides 13-14"],
+  ["LLM explanation from SHAP + disclaimer", "Exact TreeSHAP -> structured prompt -> Gemini -> 4-part summary; disclaimer added by the server", "Slides 13-14"],
   ["CTGAN vs SMOTE vs no augmentation", "Six variants on identical folds, generators fitted inside each training fold, realism + privacy audit", "Slides 11-12"],
   ["Precision, F1, confusion at 0.28 + calibration", "Every metric with a 95% bootstrap CI, calibration curve, Brier, decision-curve analysis", "Slides 8-9"],
   ["Imputation inside the CV pipeline", "Median imputer is a Pipeline step, refitted on every training fold - shown in code", "Slide 5"],
@@ -196,7 +196,7 @@ blocks.forEach(([h1, d1, col], i) => {
   if (i < blocks.length - 1) s.addShape(pres.shapes.RIGHT_ARROW, { x: x + bw + 0.05, y: by + 0.52, w: gap - 0.1, h: 0.3, fill: { color: "B8BCC4" }, line: { color: "B8BCC4" }, objectName: "arrow" });
 });
 const gx1 = MX + 1 * (bw + gap), gx2 = MX + 3 * (bw + gap);
-[[gx1 + (bw + gap) / 2, "G1  Synthetic patients", "CTGAN · TVAE · Gaussian Copula\nbenchmarked against SMOTE"], [gx2, "G2  LLM explanation", "TreeSHAP + clinical bands -> Claude\n-> summary + clinician disclaimer"]].forEach(([x, h1, d1]) => {
+[[gx1 + (bw + gap) / 2, "G1  Synthetic patients", "CTGAN · TVAE · Gaussian Copula\nbenchmarked against SMOTE"], [gx2, "G2  LLM explanation", "TreeSHAP + clinical bands -> Gemini\n-> summary + clinician disclaimer"]].forEach(([x, h1, d1]) => {
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y: 3.75, w: 3.0, h: 1.35, fill: { color: "EEECF9" }, line: { color: HEX.accent4, width: 1.25 }, rectRadius: 0.1, objectName: "gen-block" });
   s.addText([{ text: h1, options: { bold: true, fontSize: 15, color: HEX.accent4, breakLine: true } }, { text: d1, options: { fontSize: 12.5, color: INK2 } }], { x: x + 0.12, y: 3.8, w: 2.76, h: 1.25, align: "center", valign: "middle", margin: 0, isTextBox: true });
   s.addShape(pres.shapes.LINE, { x: x + 1.5, y: by + 1.35, w: 0, h: 3.75 - by - 1.35, line: { color: HEX.accent4, width: 1.25, dashType: "dash" }, objectName: "gen-link" });
@@ -301,8 +301,8 @@ s.addTable([["Generator", "Mean KS (0 = identical)", "Discriminator AUC (0.5 = r
 
 // 13 - LLM pipeline
 s = slide("CONTENT", "Generative AI", "Generative layer 2: SHAP values to plain language",
-  "SPEAKER: Prem (1:00).\nThe second generative layer is the one the jury asked for: prompt plus SHAP values to a plain-language risk summary with a clinician-review disclaimer. TreeSHAP gives exact contributions - the baseline plus the contributions equals the prediction. Those numbers plus WHO, ADA and Asian-Indian clinical bands become a structured prompt. Claude writes four fixed sections. It may only restate computed numbers, may not diagnose or prescribe, and may not blame non-modifiable factors. The disclaimer is appended by our server, not requested from the model, so it is on every response. Without a key or network the same SHAP values feed a deterministic template, and the screen says which one wrote the text.");
-const steps = [["1", "Patient -> forest", "Probability vs the\n0.28 cut-off", HEX.accent1], ["2", "TreeSHAP", "Exact contributions\nthat sum to the prediction", HEX.accent1], ["3", "Structured prompt", "Numbers + WHO / ADA /\nAsian-Indian bands only", HEX.accent1], ["G2", "Claude writes", "4 fixed sections,\nno diagnosis, no drugs", HEX.accent4], ["5", "Safety layer", "Disclaimer appended;\ntemplate fallback offline", HEX.accent3]];
+  "SPEAKER: Prem (1:00).\nThe second generative layer is the one the jury asked for: prompt plus SHAP values to a plain-language risk summary with a clinician-review disclaimer. TreeSHAP gives exact contributions - the baseline plus the contributions equals the prediction. Those numbers plus WHO, ADA and Asian-Indian clinical bands become a structured prompt. Gemini writes four fixed sections. It may only restate computed numbers, may not diagnose or prescribe, and may not blame non-modifiable factors. The disclaimer is appended by our server, not requested from the model, so it is on every response. Without a key or network the same SHAP values feed a deterministic template, and the screen says which one wrote the text.");
+const steps = [["1", "Patient -> forest", "Probability vs the\n0.28 cut-off", HEX.accent1], ["2", "TreeSHAP", "Exact contributions\nthat sum to the prediction", HEX.accent1], ["3", "Structured prompt", "Numbers + WHO / ADA /\nAsian-Indian bands only", HEX.accent1], ["G2", "Gemini writes", "4 fixed sections,\nno diagnosis, no drugs", HEX.accent4], ["5", "Safety layer", "Disclaimer appended;\ntemplate fallback offline", HEX.accent3]];
 steps.forEach(([n, h1, d1, col], i) => {
   const x = MX + i * 2.46;
   card(s, x, 1.45, 2.2, 2.1, i === 3 ? "EEECF9" : "F6F7F4");
@@ -321,7 +321,7 @@ s.addText([{ text: "Disclaimer appended by the server to every summary:  ", opti
 
 // 14 - Live demo
 s = slide("CONTENT", "Generative AI", "Live demo: score, explain, and ask the AI",
-  "SPEAKER: Prem (2:00 demo).\nSwitch to the dashboard (python app/app.py; press P for presentation mode). 1) Load a real held-out patient - the true outcome is shown beside the score. 2) Load the high-risk example: 92.6% risk, flagged. The SHAP waterfall shows glucose adding 18 points. 3) Press Explain with AI - Claude writes the four-section summary with the disclaimer; open 'Show the exact prompt'. 4) What-if: bring BMI to the Asian-Indian healthy limit of 23 and risk drops 23 points. Backup if audio or network fails: the template fallback works offline, and these screenshots are in the report.");
+  "SPEAKER: Prem (2:00 demo).\nSwitch to the dashboard (python app/app.py; press P for presentation mode). 1) Load a real held-out patient - the true outcome is shown beside the score. 2) Load the high-risk example: 92.6% risk, flagged. The SHAP waterfall shows glucose adding 18 points. 3) Press Explain with AI - Gemini writes the four-section summary with the disclaimer; open 'Show the exact prompt'. 4) What-if: bring BMI to the Asian-Indian healthy limit of 23 and risk drops 23 points. Backup if audio or network fails: the template fallback works offline, and these screenshots are in the report.");
 image(s, ASSET("pred_left.png"), MX, 1.3, 4.5, 5.35, "Predictor inputs with clinical bands");
 image(s, ASSET("pred_right.png"), 5.35, 1.3, 2.85, 5.35, "Prediction, SHAP and AI explanation");
 bullets(s, [
@@ -393,7 +393,7 @@ s = slide("CONTENT", "Appendix", "Where the project maps onto the syllabus",
 s.addTable([["Concept", "Where it appears"].map(h => ({ text: h, options: { bold: true, color: "FFFFFF", fill: { color: HEX.dk2 } } }))].concat([
   ["Generative vs discriminative", "Gaussian Naive Bayes (models P(x|y)) vs discriminative models; CTGAN, TVAE, Copula generate patients"],
   ["GANs and VAEs", "CTGAN (generator vs critic) and TVAE (latent-space sampling) benchmarked on identical folds"],
-  ["Large language models", "Claude turns SHAP values into a patient-facing explanation, with grounding, bounds and a disclaimer"],
+  ["Large language models", "Gemini turns SHAP values into a patient-facing explanation, with grounding, bounds and a disclaimer"],
   ["Latent representations", "PCA latent view of the 8 features; TVAE's learned latent space"],
   ["ML lifecycle", "Problem framing -> data audit -> model selection -> tuning -> evaluation -> ethics -> deployment -> monitoring"],
   ["Responsible AI", "Model card, per-10,000 impact, bootstrap CIs, India transport analysis, LLM provenance labels"]

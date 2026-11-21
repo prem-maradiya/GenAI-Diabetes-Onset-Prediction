@@ -7,7 +7,7 @@ The pipeline, end to end:
                      +--> SHAP TreeExplainer --> exact per-feature contributions
                                                   (they sum to probability - base rate)
                                    |
-        clinical reference bands --+--> structured prompt --> Claude --> summary
+        clinical reference bands --+--> structured prompt --> Gemini --> summary
                                                                           |
                          server-side safety layer: fixed clinician-review disclaimer,
                          and a deterministic template whenever the LLM is unavailable
@@ -30,7 +30,7 @@ from functools import lru_cache
 import numpy as np
 import pandas as pd
 
-from config import FEATURE_META, FEATURES, LLM_MODEL, ROOT, clinical_band
+from config import FEATURE_META, FEATURES, LLM_MODEL_CANDIDATES, LLM_PROVIDER, ROOT, clinical_band
 
 DISCLAIMER = (
     "This summary was generated automatically from a screening model trained on 768 "
@@ -168,7 +168,7 @@ def build_prompt(shap_result: dict, threshold: float, band: dict) -> str:
 # Writers: the LLM, and the deterministic fallback
 # --------------------------------------------------------------------------- #
 def _load_dotenv() -> None:
-    """Read ANTHROPIC_API_KEY from a git-ignored .env file if one exists."""
+    """Read GEMINI_API_KEY (and optional GEMINI_MODEL) from a git-ignored .env file."""
     env = ROOT / ".env"
     if not env.exists():
         return
@@ -180,37 +180,73 @@ def _load_dotenv() -> None:
         os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 
+def _api_key() -> str | None:
+    return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+
+
 def llm_available() -> bool:
     _load_dotenv()
     if os.environ.get("DIABETES_LLM_DISABLED") == "1":
         return False
     try:
-        import anthropic  # noqa: F401
+        from google import genai  # noqa: F401
     except ImportError:
         return False
-    return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+    return bool(_api_key())
 
 
-def llm_summary(prompt: str, timeout: float = 45.0) -> str:
-    """One Claude call. Raises on any failure so the caller can fall back."""
-    import anthropic
+@lru_cache(maxsize=1)
+def _client():
+    """Vertex AI express-mode keys start with 'AQ.'; anything else is a Gemini API (AI Studio) key."""
+    from google import genai
 
-    client = anthropic.Anthropic(timeout=timeout, max_retries=1)
-    response = client.beta.messages.create(
-        model=LLM_MODEL,
-        max_tokens=2000,
-        system=SYSTEM_PROMPT,
-        output_config={"effort": "low"},
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
-        messages=[{"role": "user", "content": prompt}],
+    key = _api_key()
+    return genai.Client(vertexai=key.startswith("AQ."), api_key=key)
+
+
+_WORKING_MODEL: list[str] = []
+
+
+def _candidate_models() -> list[str]:
+    override = os.environ.get("GEMINI_MODEL")
+    if override:
+        return [override]
+    return list(dict.fromkeys(_WORKING_MODEL + LLM_MODEL_CANDIDATES))
+
+
+def llm_summary(prompt: str, timeout: float = 45.0) -> tuple[str, str]:
+    """One Gemini call. Returns (text, model id). Raises on failure so the caller can fall back.
+
+    Model IDs change over time, so the first candidate the key can use is
+    remembered; a 404 (model not available) moves on to the next candidate.
+    """
+    from google.genai import errors, types
+
+    config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        temperature=0.3,
+        max_output_tokens=2048,
+        http_options=types.HttpOptions(timeout=int(timeout * 1000)),
     )
-    if response.stop_reason == "refusal":
-        raise RuntimeError("model declined")
-    text = "".join(b.text for b in response.content if b.type == "text").strip()
-    if not text:
-        raise RuntimeError("empty response")
-    return text
+    last_error: Exception | None = None
+    for model in _candidate_models():
+        try:
+            response = _client().models.generate_content(model=model, contents=prompt, config=config)
+        except errors.ClientError as exc:
+            if getattr(exc, "code", None) == 404:
+                last_error = exc
+                continue
+            raise
+        feedback = getattr(response, "prompt_feedback", None)
+        if feedback is not None and getattr(feedback, "block_reason", None):
+            raise RuntimeError("blocked by safety filter")
+        text = (response.text or "").strip()
+        if not text:
+            raise RuntimeError("empty response")
+        if model not in _WORKING_MODEL:
+            _WORKING_MODEL.insert(0, model)
+        return text, model
+    raise RuntimeError(f"no available Gemini model ({last_error})")
 
 
 def template_summary(shap_result: dict, threshold: float, band: dict) -> str:
@@ -265,20 +301,20 @@ def explain_patient(pipeline, patient: dict, threshold: float, band: dict, use_l
     shap_result = shap_contributions(pipeline, patient)
     prompt = build_prompt(shap_result, threshold, band)
 
-    writer, error = "template", None
+    writer, error, model = "template", None, None
     text = None
     if use_llm and llm_available():
         try:
-            text = llm_summary(prompt)
+            text, model = llm_summary(prompt)
             writer = "llm"
-        except Exception as exc:  # network, auth, rate limit, refusal - all fall back
+        except Exception as exc:  # network, auth, quota, safety block - all fall back
             error = type(exc).__name__
     if text is None:
         text = template_summary(shap_result, threshold, band)
 
     return {
         "writer": writer,
-        "model": LLM_MODEL if writer == "llm" else "deterministic template",
+        "model": f"{LLM_PROVIDER} ({model})" if writer == "llm" else "deterministic template",
         "fallback_reason": error,
         "summary": text,
         "disclaimer": DISCLAIMER,

@@ -76,7 +76,7 @@ def block_diagram() -> str:
         ("Flask API", "validate + clamp\n/api/predict", BLUE, "white"),
         ("Model bundle", "probability +\n0.28 cut-off", BLUE, "white"),
         ("TreeSHAP", "exact per-feature\ncontributions", BLUE, "white"),
-        ("G2  LLM (Claude)", "grounded prompt ->\n4-part summary", VIOLET, SOFT_V),
+        ("G2  LLM (Gemini)", "grounded prompt ->\n4-part summary", VIOLET, SOFT_V),
         ("Safety layer", "disclaimer +\ntemplate fallback", GREEN, SOFT_G),
     ]
     for x, (t, b, c, f) in zip(xs, serve):
@@ -143,7 +143,7 @@ def flowchart() -> str:
     ax.add_patch(plt.Polygon([(8.6, dd + 0.55), (9.9, dd), (8.6, dd - 0.55), (7.3, dd)], fc=SOFT_V, ec=VIOLET, lw=1.5))
     ax.text(8.6, dd, "LLM key &\nnetwork?", ha="center", va="center", fontsize=9.3, weight="bold", color=VIOLET)
     arrow(ax, (cx + w, dd), (7.3, dd), color=VIOLET)
-    box(ax, 6.2, dd - 1.75, 2.0, 0.8, "G2 Claude\nsummary", fill=SOFT_V, edge=VIOLET, title_color=VIOLET, size=9.5)
+    box(ax, 6.2, dd - 1.75, 2.0, 0.8, "G2 Gemini\nsummary", fill=SOFT_V, edge=VIOLET, title_color=VIOLET, size=9.5)
     box(ax, 8.8, dd - 1.75, 2.0, 0.8, "Template\nsummary", fill=SOFT, edge=MUTED, size=9.5)
     arrow(ax, (8.3, dd - 0.3), (7.2, dd - 0.95), color=VIOLET)
     arrow(ax, (8.9, dd - 0.3), (9.8, dd - 0.95), color=MUTED)

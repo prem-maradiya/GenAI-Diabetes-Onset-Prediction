@@ -1,7 +1,7 @@
 # Diabetes Onset Prediction — a recall-first screener with a generative AI layer
 
 **Generative AI · Final Jury · Model Making**
-Pima Indians Diabetes Database (UCI / NIDDK) · Python · scikit-learn · SDV (CTGAN / TVAE) · SHAP · Claude
+Pima Indians Diabetes Database (UCI / NIDDK) · Python · scikit-learn · SDV (CTGAN / TVAE) · SHAP · Gemini
 
 ---
 
@@ -19,7 +19,7 @@ Two **generative AI layers** sit on top:
 
 1. **Synthetic patients** — CTGAN (a GAN), TVAE (a variational autoencoder) and a Gaussian Copula are
    benchmarked against SMOTE and no augmentation, with every generator fitted inside each training fold.
-2. **LLM explanations** — exact TreeSHAP values and clinical reference bands are turned by Claude into a
+2. **LLM explanations** — exact TreeSHAP values and clinical reference bands are turned by Gemini into a
    plain-language summary for the patient, with a clinician-review disclaimer appended on every response.
 
 ---
@@ -77,7 +77,7 @@ python app/app.py               # dashboard at http://127.0.0.1:5000
 python -m pytest -q             # 13 regression tests
 ```
 
-**LLM explanations (optional).** Copy `.env.example` to `.env` and add `ANTHROPIC_API_KEY=...`.
+**LLM explanations (optional).** Copy `.env.example` to `.env` and add `GEMINI_API_KEY=...` (a Vertex AI express-mode key starting `AQ.`, or a Gemini API key).
 Without a key — or without a network in the jury room — the dashboard uses a deterministic template built
 from the same SHAP values, and says so on screen.
 
@@ -121,7 +121,7 @@ python -m nbconvert --to notebook --execute --inplace notebooks/diabetes_onset_p
 │   ├── evaluate.py                    Step 3 — recall-first metrics, curves, cost, impact
 │   ├── rigour.py                      bootstrap CIs, calibration, decision curve, India transport
 │   ├── synthetic.py                   GenAI 1 — CTGAN / TVAE / Copula vs SMOTE, fidelity audit
-│   ├── genai_explain.py               GenAI 2 — TreeSHAP -> prompt -> Claude -> safe summary
+│   ├── genai_explain.py               GenAI 2 — TreeSHAP -> prompt -> Gemini -> safe summary
 │   ├── explain.py                     Step 4 — permutation / impurity / odds-ratio views
 │   ├── plots.py, plots_genai.py       all 24 figures in one design system
 │   ├── pipeline.py                    end-to-end runner — writes every artefact

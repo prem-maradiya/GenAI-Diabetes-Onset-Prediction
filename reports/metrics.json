@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-21 19:29:56",
-  "runtime_seconds": 97.6,
+  "generated_at": "2026-11-21 20:52:55",
+  "runtime_seconds": 90.4,
   "config": {
     "test_size": 0.2,
     "cv_folds": 5,

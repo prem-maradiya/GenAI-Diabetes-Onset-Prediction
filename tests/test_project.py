@@ -147,3 +147,61 @@ def test_api_explain(client):
 def test_api_health_and_status(client):
     assert client.get("/health").get_json()["status"] == "ok"
     assert client.get("/api/llm-status").get_json()["available"] is False
+
+
+# ------------------------------------------------------ Gemini LLM layer ---- #
+class _FakeResp:
+    def __init__(self, text, blocked=False):
+        self.text = text
+        self.prompt_feedback = type("F", (), {"block_reason": "SAFETY" if blocked else None})()
+
+
+def _fake_client(behaviour):
+    from google.genai import errors
+
+    calls = []
+
+    class Models:
+        def generate_content(self, model, contents, config):
+            calls.append(model)
+            result = behaviour(model)
+            if isinstance(result, int):
+                raise errors.ClientError(result, {"error": {"code": result, "message": "x", "status": "NOT_FOUND"}})
+            return result
+
+    return type("C", (), {"models": Models()})(), calls
+
+
+def test_gemini_falls_through_unavailable_models(monkeypatch):
+    import genai_explain as ge
+
+    client, calls = _fake_client(lambda m: 404 if m != "gemini-2.5-flash" else _FakeResp("**What the screen found**\nok"))
+    monkeypatch.setattr(ge, "_client", lambda: client)
+    monkeypatch.setattr(ge, "_WORKING_MODEL", [])
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
+    text, model = ge.llm_summary("prompt")
+    assert model == "gemini-2.5-flash" and text.startswith("**What")
+    assert calls[-1] == "gemini-2.5-flash" and len(calls) > 1
+    calls.clear()
+    ge.llm_summary("prompt")                      # the working model is remembered
+    assert calls == ["gemini-2.5-flash"]
+
+
+def test_gemini_blocked_or_empty_raises(monkeypatch):
+    import genai_explain as ge
+
+    for resp in (_FakeResp("text", blocked=True), _FakeResp("   ")):
+        client, _ = _fake_client(lambda m, r=resp: r)
+        monkeypatch.setattr(ge, "_client", lambda c=client: c)
+        with pytest.raises(RuntimeError):
+            ge.llm_summary("prompt")
+
+
+def test_explanation_falls_back_to_template_on_llm_error(bundle, monkeypatch):
+    import genai_explain as ge
+
+    monkeypatch.setattr(ge, "llm_available", lambda: True)
+    monkeypatch.setattr(ge, "llm_summary", lambda prompt: (_ for _ in ()).throw(RuntimeError("network down")))
+    out = ge.explain_patient(bundle["pipeline"], HIGH_RISK, bundle["threshold"], {"band": "High risk", "action": "Refer"})
+    assert out["writer"] == "template" and out["fallback_reason"] == "RuntimeError"
+    assert out["disclaimer"]
