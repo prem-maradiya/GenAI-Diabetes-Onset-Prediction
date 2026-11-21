@@ -1,0 +1,64 @@
+{
+  "note": "Standardised logistic surrogate - browser fallback only, not the deployed model.",
+  "features": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age"
+  ],
+  "mean": [
+    3.819218,
+    121.67101,
+    72.140065,
+    29.042345,
+    137.705212,
+    32.448208,
+    0.477428,
+    33.36645
+  ],
+  "scale": [
+    3.311448,
+    29.979351,
+    12.265119,
+    8.884611,
+    78.7006,
+    6.818562,
+    0.330031,
+    11.823798
+  ],
+  "coef": [
+    0.372586,
+    1.183177,
+    -0.014899,
+    0.013623,
+    -0.044735,
+    0.709716,
+    0.287552,
+    0.186661
+  ],
+  "intercept": -0.25708,
+  "medians": {
+    "Pregnancies": 3.0,
+    "Glucose": 117.0,
+    "BloodPressure": 72.0,
+    "SkinThickness": 29.0,
+    "Insulin": 125.0,
+    "BMI": 32.3,
+    "DiabetesPedigreeFunction": 0.3725,
+    "Age": 29.0
+  },
+  "train_medians": {
+    "Pregnancies": 3.0,
+    "Glucose": 117.0,
+    "BloodPressure": 72.0,
+    "SkinThickness": 29.0,
+    "Insulin": 125.0,
+    "BMI": 32.4,
+    "DiabetesPedigreeFunction": 0.3825,
+    "Age": 29.0
+  }
+}

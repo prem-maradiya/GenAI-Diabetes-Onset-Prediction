@@ -1,0 +1,52 @@
+{
+  "model_name": "Diabetes Onset Risk Screener",
+  "version": "2.0",
+  "date": "2026-11-21 19:29:56",
+  "model_type": "Random Forest",
+  "task": "Binary classification - probability of diabetes onset",
+  "training_data": {
+    "dataset": "Pima Indians Diabetes Database (UCI / NIDDK)",
+    "population": "Female patients of Pima Indian heritage, at least 21 years old",
+    "rows": 768,
+    "positive_rate": 0.349
+  },
+  "intended_use": "Educational demonstration of a recall-first screening triage. It ranks patients for a confirmatory blood test; it is a prioritisation aid, not a diagnosis.",
+  "out_of_scope_uses": [
+    "Any real clinical diagnosis or treatment decision",
+    "Insurance pricing, employment screening or eligibility decisions",
+    "Populations unlike the training cohort (men, under-21s, other ancestries)"
+  ],
+  "operating_point": {
+    "threshold": 0.28,
+    "rule": "maximise recall subject to precision >= 0.50; cost model FN=5 x FP=1",
+    "test_recall": 0.9074,
+    "test_precision": 0.5269,
+    "test_specificity": 0.56,
+    "missed_cases_on_test": 5,
+    "per_10k_missed": 325,
+    "per_10k_false_alarms": 2857
+  },
+  "ethical_considerations": {
+    "false_negative_harm": "A missed case is told they are healthy and exits the screening funnel; harm compounds silently over years. This is why the threshold is tuned for recall and why the model must never be the last check.",
+    "false_positive_harm": "Anxiety plus one confirmatory test. Real but recoverable - which is why we accept more of them.",
+    "representation": "A single-ancestry, female-only cohort. Applying this model to any other population is extrapolation, not prediction.",
+    "automation_bias": "A clinician who sees 'low risk' may stop looking. The UI therefore shows a probability with its uncertainty, never a bare 'negative'.",
+    "data_provenance": "The impossible zeros prove the source data was silently corrupted. Any deployment needs the same audit on its own intake pipeline."
+  },
+  "limitations": [
+    "Only 768 patients - confidence intervals are wide",
+    "Insulin missing in 48.7% of rows; its imputed values are weakly informed",
+    "Cross-sectional data: the model predicts a label, not a time-to-onset",
+    "No external validation cohort; at Indian prevalence (ICMR-INDIAB 11.4%) precision at this threshold falls to about 21%, so the cut-off must be re-tuned before any use in India",
+    "Synthetic augmentation (CTGAN / TVAE / SMOTE) did not beat class weighting on 214 diabetic training patients, so the deployed model is trained on real patients only"
+  ],
+  "generative_components": {
+    "llm_explanations": "Patient-facing summaries are written by an LLM from SHAP values and clinical reference bands only; a fixed clinician-review disclaimer is appended server-side and a deterministic template is used whenever the LLM is unavailable.",
+    "synthetic_data": "CTGAN, TVAE and Gaussian Copula benchmarked against SMOTE and no augmentation."
+  },
+  "monitoring_plan": [
+    "Track realised recall against confirmed follow-up results every quarter",
+    "Alert on feature drift (mean glucose, BMI) versus the training distribution",
+    "Re-tune the threshold if prevalence shifts - the cut-off is prevalence-dependent"
+  ]
+}

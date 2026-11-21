@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diabetes Risk Screener</title>
+<meta name="description" content="Recall-first diabetes onset screening with a generative AI explanation layer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232a78d6'/><path d='M22 56 h14 l8 -20 l12 38 l9 -22 h13' stroke='white' stroke-width='8' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<script>
+  /* Apply the saved theme before first paint so there is no flash. */
+  try { const t = localStorage.getItem("dr-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+</head>
+<body>
+<div class="tooltip" id="tooltip"></div>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h4l2-5 3 10 2-6h7"/></svg>
+      </div>
+      <div class="brand-text">
+        <div class="t">Diabetes Risk Screener</div>
+        <div class="s">Recall-first · GenAI-explained</div>
+      </div>
+    </div>
+
+    <div class="side-meta">
+      <div><div class="m-k">Model</div><div class="m-v" id="meta-model" style="font-size:12.5px">{{ model_name }}</div></div>
+      <div><div class="m-k">Threshold</div><div class="m-v" id="meta-threshold">{{ '%.2f'|format(threshold) }}</div></div>
+      <div><div class="m-k">Test recall</div><div class="m-v" id="meta-recall">—</div></div>
+      <div><div class="m-k">LLM layer</div><div class="m-v" id="meta-llm" style="font-size:12.5px">—</div></div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <div class="nav-label">The story</div>
+      <a href="#overview" class="active"><span class="num">◆</span> Overview</a>
+      <a href="#data"><span class="num">1</span> Data &amp; Cleaning</a>
+      <a href="#performance"><span class="num">2</span> Model &amp; Evaluation</a>
+      <a href="#lab"><span class="num">3</span> Threshold Lab</a>
+      <a href="#importance"><span class="num">4</span> Explainability</a>
+      <a href="#genai"><span class="num">5</span> Generative AI <span class="tag">GENAI</span></a>
+      <div class="nav-label">Demo &amp; ethics</div>
+      <a href="#predictor"><span class="num">▶</span> Live Predictor</a>
+      <a href="#impact"><span class="num">6</span> Impact, Ethics &amp; India</a>
+    </nav>
+
+    <div class="side-foot">
+      Pima Indians Diabetes Database · UCI / NIDDK · 768 patients
+      <div class="keys"><kbd>←</kbd><kbd>→</kbd> sections <kbd>P</kbd> present <kbd>T</kbd> theme</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="wrap tb-inner">
+        <div style="display:flex;gap:12px;align-items:center;min-width:0">
+          <button class="icon-btn menu-btn" id="btn-menu" aria-label="Open navigation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </button>
+          <div style="min-width:0">
+            <div class="tb-step" id="view-step">Overview</div>
+            <h1 id="view-title">Catching diabetes before it catches the patient</h1>
+            <p class="tb-sub" id="view-sub">Held-out test results for the deployed model</p>
+          </div>
+        </div>
+        <div class="tb-actions">
+          <button class="icon-btn" id="btn-theme" title="Toggle light / dark (T)" aria-label="Toggle theme">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          </button>
+          <button class="icon-btn" id="btn-present" title="Presentation mode (P)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+            <span class="label-text">Present</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="wrap">
+
+      <!-- ============================== OVERVIEW ============================ -->
+      <section class="view active" id="overview">
+        <div class="hero">
+          <div class="kicker">Generative AI · Model Making · Final jury</div>
+          <h2>A screening model that would rather call you back than miss you</h2>
+          <p class="lede" id="ov-story">—</p>
+          <div class="hero-kpis">
+            <div class="hk good"><div class="l">Test recall</div><div class="v" id="ov-recall">—</div><div class="f" id="ov-recall-ci">—</div></div>
+            <div class="hk crit"><div class="l">Cases missed</div><div class="v" id="ov-missed">—</div><div class="f" id="ov-missed-foot">—</div></div>
+            <div class="hk blue"><div class="l">ROC-AUC</div><div class="v" id="ov-auc">—</div><div class="f" id="ov-auc-ci">—</div></div>
+            <div class="hk violet"><div class="l">Generative layers</div><div class="v">2</div><div class="f">CTGAN / TVAE synthetic patients · LLM risk explanations</div></div>
+          </div>
+        </div>
+
+        <div class="block-title"><h2>How it works</h2><span class="sub">Every stage writes a named artefact; one command rebuilds them all</span></div>
+        <div class="flow">
+          <div class="fnode"><div class="fi">1</div><div class="ft">Load &amp; audit</div><div class="fd">768 patients, 8 measurements</div></div>
+          <div class="fnode"><div class="fi">2</div><div class="ft">Repair zeros</div><div class="fd" id="ov-repaired-fd">652 impossible zeros → missing</div></div>
+          <div class="fnode gen"><div class="fi">G1</div><div class="ft">Synthetic patients</div><div class="fd">CTGAN · TVAE · Copula vs SMOTE</div></div>
+          <div class="fnode"><div class="fi">3</div><div class="ft">7 models, 5-fold CV</div><div class="fd">Imputer inside the pipeline</div></div>
+          <div class="fnode"><div class="fi">4</div><div class="ft">Recall-first cut-off</div><div class="fd">Max recall, precision ≥ 0.50</div></div>
+          <div class="fnode"><div class="fi">5</div><div class="ft">SHAP explanation</div><div class="fd">Exact TreeSHAP per patient</div></div>
+          <div class="fnode gen"><div class="fi">G2</div><div class="ft">LLM summary</div><div class="fd">Plain language + clinician disclaimer</div></div>
+        </div>
+
+        <div class="grid g-3-2 mt-lg">
+          <div class="card">
+            <h3>Jury 2 feedback, and where each point is answered</h3>
+            <div class="card-sub">Every request from the 22 October review maps to a working part of this system</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Jury asked for</th><th>What we built</th><th>Where</th></tr></thead>
+                <tbody>
+                  <tr><td class="name">A generative AI component</td><td>Two: CTGAN / TVAE synthetic patients, and an LLM that writes the risk explanation</td><td><a href="#genai">Generative AI</a></td></tr>
+                  <tr><td class="name">LLM explanations from SHAP</td><td>SHAP values + clinical bands → Claude → plain-language summary, clinician-review disclaimer always appended</td><td><a href="#predictor">Live Predictor</a></td></tr>
+                  <tr><td class="name">CTGAN vs SMOTE vs none</td><td>Six variants on identical folds, generators fitted inside each training fold; realism and privacy audit</td><td><a href="#genai">Generative AI</a></td></tr>
+                  <tr><td class="name">Precision / F1 / confusion at 0.28, calibration</td><td>Full operating-point metrics with 95% bootstrap CIs, calibration curve, Brier, decision curve</td><td><a href="#performance">Model &amp; Evaluation</a></td></tr>
+                  <tr><td class="name">Imputation inside CV</td><td>Median imputer is a <code>Pipeline</code> step, refitted on every training fold</td><td><a href="#data">Data &amp; Cleaning</a></td></tr>
+                  <tr><td class="name">External validity for Indian patients</td><td>Prevalence-transport analysis at ICMR-INDIAB rates, Asian-Indian BMI cut-offs, re-validation protocol</td><td><a href="#impact">Impact &amp; India</a></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <h3>Operating point</h3>
+              <div class="card-sub">The decision rule everything reports against</div>
+              <div class="kv">
+                <div class="kv-row"><span class="k">Primary metric</span><span class="v"><strong>Recall</strong> — the share of diabetic patients caught</span></div>
+                <div class="kv-row"><span class="k">Guard metric</span><span class="v">Precision ≥ 0.50</span></div>
+                <div class="kv-row"><span class="k">Cost model</span><span class="v">Missed case = 5 × false alarm</span></div>
+                <div class="kv-row"><span class="k">Threshold</span><span class="v" id="ov-threshold">—</span></div>
+                <div class="kv-row"><span class="k">Role</span><span class="v">Triage for a confirmatory blood test — never a diagnosis</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Dataset &amp; split</h3>
+              <div class="kv">
+                <div class="kv-row"><span class="k">Patients</span><span class="v">768 · female, Pima heritage, 21+</span></div>
+                <div class="kv-row"><span class="k">Positive rate</span><span class="v">34.9%</span></div>
+                <div class="kv-row"><span class="k">Train / test</span><span class="v">614 / 154 · stratified, seed 42</span></div>
+                <div class="kv-row"><span class="k">Test set</span><span class="v">Scored once, after every decision was locked</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================== DATA & CLEANING ========================= -->
+      <section class="view" id="data">
+        <div class="grid g4">
+          <div class="stat"><div class="label">Patients</div><div class="value" id="s1-rows">—</div><div class="foot">Female, Pima heritage, aged 21+</div></div>
+          <div class="stat"><div class="label">Features</div><div class="value" id="s1-features">—</div><div class="foot">All numeric, all routinely collected</div></div>
+          <div class="stat"><div class="label">Diabetic</div><div class="value v-orange" id="s1-pos">—</div><div class="foot" id="s1-pos-foot">—</div></div>
+          <div class="stat accent-critical"><div class="label">Declared nulls</div><div class="value v-critical" id="s1-nulls">—</div><div class="foot">…yet <strong id="s2-total">—</strong> values are impossible zeros</div></div>
+        </div>
+
+        <div class="card mt">
+          <h3>Feature profile and separation by outcome</h3>
+          <div class="card-sub">Class-conditional means are the earliest signal of which features will matter</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Feature</th><th class="num">Median</th><th class="num">Range</th>
+                <th class="num">Mean · no diabetes</th><th class="num">Mean · diabetes</th>
+                <th class="num">Gap</th><th class="num">r with outcome</th>
+              </tr></thead>
+              <tbody id="tbl-features"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid g-1-2 mt">
+          <div class="card">
+            <h3>Impossible zeros per column</h3>
+            <div class="card-sub">Zero treated as missing in five columns, on clinical grounds</div>
+            <div class="chart" id="chart-missing"></div>
+            <div class="callout mt">
+              <div class="ct">Deliberately excluded: Pregnancies</div>
+              Zero pregnancies is valid. Blanket-replacing every zero would destroy real information for <strong>111 patients</strong>.
+            </div>
+          </div>
+          <div class="card">
+            <h3>Is the missingness informative?</h3>
+            <div class="card-sub">Diabetic rate when a value is absent versus present</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th>Feature</th><th class="num">Missing</th><th class="num">% rows</th>
+                  <th class="num">Diabetic rate<br>if missing</th><th class="num">Diabetic rate<br>if present</th><th class="num">Gap</th>
+                </tr></thead>
+                <tbody id="tbl-missing"></tbody>
+              </table>
+            </div>
+            <div class="callout good mt">
+              <div class="ct">Imputation lives inside the cross-validation pipeline</div>
+              The zero → NaN rule is deterministic and learns nothing, so it is leak-free outside the pipeline. The
+              <em>imputer</em> learns medians, so it is a step of the scikit-learn <code>Pipeline</code>:
+              <code>Pipeline([("impute", SimpleImputer("median")), ("model", RandomForest)])</code> — refitted on
+              every training fold, so a validation fold never influences how it is filled.
+            </div>
+          </div>
+        </div>
+
+        <div class="grid g2 mt">
+          <div class="card">
+            <h3>Which imputer, and how it was decided</h3>
+            <div class="card-sub">Same model, same folds — only the imputer changes</div>
+            <div class="chart" id="chart-imputation"></div>
+            <p class="small mt">The differences are small, which is the finding: <strong>recognising the zeros mattered far more than choosing an imputer.</strong></p>
+          </div>
+          <div class="card">
+            <h3>A 2-D latent view of the eight features</h3>
+            <div class="card-sub">PCA projection — the classes overlap heavily</div>
+            <div class="chart" id="chart-latent"></div>
+            <div class="legend">
+              <span class="item"><span class="swatch" style="background:var(--s1)"></span> No diabetes</span>
+              <span class="item"><span class="swatch" style="background:var(--s2)"></span> Diabetes</span>
+            </div>
+          </div>
+        </div>
+
+        <figure class="figure-card mt">
+          <img id="fig-imputation" alt="Distributions before and after imputation">
+          <figcaption>The spike at zero disappears without inventing a new distribution shape.</figcaption>
+        </figure>
+      </section>
+
+      <!-- ========================= MODEL & EVALUATION ======================= -->
+      <section class="view" id="performance">
+        <div class="grid g4">
+          <div class="stat accent-good"><div class="label">Recall @ <span class="th-val">0.28</span></div><div class="value v-good" id="op-recall">—</div><div class="ci" id="op-recall-ci">—</div></div>
+          <div class="stat accent"><div class="label">Precision @ <span class="th-val">0.28</span></div><div class="value" id="op-precision">—</div><div class="ci" id="op-precision-ci">—</div></div>
+          <div class="stat accent"><div class="label">F1 @ <span class="th-val">0.28</span></div><div class="value" id="op-f1">—</div><div class="ci" id="op-f1-ci">—</div></div>
+          <div class="stat accent-violet"><div class="label">Brier score</div><div class="value" id="op-brier">—</div><div class="ci" id="op-brier-ci">—</div></div>
+        </div>
+
+        <div class="grid g-3-2 mt">
+          <div class="card">
+            <h3>Operating point with 95% confidence intervals</h3>
+            <div class="card-sub" id="ci-sub">Percentile bootstrap over the held-out test set</div>
+            <div id="ci-rows"></div>
+            <p class="small mt muted">With only 54 diabetic patients in the test set, a single number overstates certainty. The interval is the honest answer to “what is your recall?”.</p>
+          </div>
+          <div class="card">
+            <h3>Confusion matrix at the deployed threshold</h3>
+            <div class="card-sub" id="cm-sub">154 held-out patients</div>
+            <div class="cm-grid">
+              <div class="cm-cell"><div class="cm-v" id="cm-tn">—</div><div class="cm-l">True negatives</div></div>
+              <div class="cm-cell"><div class="cm-v" id="cm-fp">—</div><div class="cm-l">False alarms</div></div>
+              <div class="cm-cell fn"><div class="cm-v" id="cm-fn">—</div><div class="cm-l">MISSED CASES</div></div>
+              <div class="cm-cell tp"><div class="cm-v" id="cm-tp">—</div><div class="cm-l">Caught cases</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt">
+          <h3>Model comparison</h3>
+          <div class="card-sub">5-fold stratified cross-validation on the training set, at the default 0.50 threshold</div>
+          <div class="chart" id="chart-models"></div>
+          <div class="legend">
+            <span class="item"><span class="swatch" style="background:var(--s1)"></span> Recall</span>
+            <span class="item"><span class="swatch" style="background:var(--s2)"></span> Precision</span>
+          </div>
+          <div class="table-wrap mt">
+            <table>
+              <thead><tr>
+                <th>Model</th><th>Family</th><th class="num">Recall</th><th class="num">Precision</th>
+                <th class="num">F1</th><th class="num">F2</th><th class="num">ROC-AUC</th>
+                <th class="num">PR-AUC</th><th class="num">Accuracy</th><th class="num">Missed</th>
+              </tr></thead>
+              <tbody id="tbl-models"></tbody>
+            </table>
+          </div>
+          <div class="callout mt"><div class="ct">How the winner was chosen</div><span id="s3-selection">—</span></div>
+        </div>
+
+        <div class="grid g2 mt">
+          <div class="card">
+            <h3>Held-out test performance</h3>
+            <div class="card-sub">Default 0.50 versus the recall-first threshold — same model, same patients</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Metric</th><th class="num">At 0.50</th><th class="num">Tuned</th><th class="num">Change</th></tr></thead>
+                <tbody id="tbl-test"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Ranking quality</h3>
+            <div class="card-sub">Threshold-independent ordering of patients by risk</div>
+            <div class="grid g2">
+              <div class="chart" id="chart-roc"></div>
+              <div class="chart" id="chart-pr"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid g2 mt">
+          <div class="card">
+            <h3>Calibration curve</h3>
+            <div class="card-sub">Is a predicted 70% really 70%? Deployed forest vs an isotonic-calibrated copy</div>
+            <div class="chart" id="chart-calibration"></div>
+            <div class="legend">
+              <span class="item"><span class="swatch line" style="background:var(--s1)"></span> Deployed forest</span>
+              <span class="item"><span class="swatch line" style="background:var(--s2)"></span> Isotonic-calibrated</span>
+            </div>
+            <div class="table-wrap mt">
+              <table>
+                <thead><tr><th></th><th class="num">Brier</th><th class="num">Slope</th><th class="num">Intercept</th><th class="num">ROC-AUC</th></tr></thead>
+                <tbody id="tbl-calibration"></tbody>
+              </table>
+            </div>
+            <p class="small mt muted" id="cal-note">—</p>
+          </div>
+          <div class="card">
+            <h3>Decision-curve analysis</h3>
+            <div class="card-sub">Net benefit of screening with the model vs testing everyone or no one</div>
+            <div class="chart" id="chart-dca"></div>
+            <div class="legend">
+              <span class="item"><span class="swatch line" style="background:var(--s1)"></span> Model</span>
+              <span class="item"><span class="swatch line" style="background:var(--s2)"></span> Test everyone</span>
+              <span class="item"><span class="swatch line" style="background:var(--ink-muted)"></span> Test no one</span>
+            </div>
+            <p class="small mt" id="dca-note">—</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================ THRESHOLD LAB ========================= -->
+      <section class="view" id="lab">
+        <div class="lab-controls">
+          <span class="lc-label">Decision threshold</span>
+          <input type="range" id="lab-slider" min="0.05" max="0.95" step="0.01" value="0.28" aria-label="Decision threshold">
+          <span class="lab-value" id="lab-value">0.28</span>
+          <div class="preset-row" id="lab-presets"></div>
+        </div>
+
+        <div class="grid g-2-1">
+          <div class="card">
+            <h3>Metric curves</h3>
+            <div class="card-sub">Out-of-fold performance across every candidate cut-off</div>
+            <div class="chart" id="chart-threshold"></div>
+            <div class="legend">
+              <span class="item"><span class="swatch line" style="background:var(--s1)"></span> Recall</span>
+              <span class="item"><span class="swatch line" style="background:var(--s2)"></span> Precision</span>
+              <span class="item"><span class="swatch line" style="background:var(--s3)"></span> F2 score</span>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <h3>At this threshold</h3>
+              <div class="card-sub" id="lab-caption">—</div>
+              <div class="cm-grid">
+                <div class="cm-cell"><div class="cm-v" id="lab-tn">—</div><div class="cm-l">True negatives</div></div>
+                <div class="cm-cell"><div class="cm-v" id="lab-fp">—</div><div class="cm-l">False alarms</div></div>
+                <div class="cm-cell fn"><div class="cm-v" id="lab-fn">—</div><div class="cm-l">MISSED CASES</div></div>
+                <div class="cm-cell tp"><div class="cm-v" id="lab-tp">—</div><div class="cm-l">Caught cases</div></div>
+              </div>
+              <div class="kv mt">
+                <div class="kv-row"><span class="k">Recall</span><span class="v"><b id="lab-recall">—</b></span></div>
+                <div class="kv-row"><span class="k">Precision</span><span class="v"><b id="lab-precision">—</b></span></div>
+                <div class="kv-row"><span class="k">F2 score</span><span class="v"><b id="lab-f2">—</b></span></div>
+                <div class="kv-row"><span class="k">Weighted cost</span><span class="v"><b id="lab-cost">—</b> <span class="muted small">(5×FN + 1×FP)</span></span></div>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Per 10,000 screened</h3>
+              <div class="kv">
+                <div class="kv-row"><span class="k">Cases caught</span><span class="v"><b id="lab-k-tp">—</b></span></div>
+                <div class="kv-row"><span class="k">Cases missed</span><span class="v" style="color:var(--critical-ink)"><b id="lab-k-fn" style="color:inherit">—</b></span></div>
+                <div class="kv-row"><span class="k">False alarms</span><span class="v"><b id="lab-k-fp">—</b></span></div>
+                <div class="kv-row"><span class="k">Tests needed</span><span class="v"><b id="lab-k-tests">—</b></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt">
+          <h3>The cost-weighted view</h3>
+          <div class="card-sub">If a missed diagnosis is five times worse than a false alarm, where is total harm lowest?</div>
+          <div class="chart" id="chart-cost"></div>
+          <p class="small mt">The <strong>5×</strong> weight is a stated assumption, not a hidden one — it lives in <code>config.py</code> and the model card.</p>
+        </div>
+      </section>
+
+      <!-- ============================ EXPLAINABILITY ======================== -->
+      <section class="view" id="importance">
+        <div class="grid g2">
+          <div class="card">
+            <h3>SHAP — how each measurement moves each patient's risk</h3>
+            <div class="card-sub">TreeSHAP on the deployed forest · every dot is one held-out patient · x-axis in percentage points</div>
+            <div class="chart" id="chart-beeswarm"></div>
+            <div class="legend">
+              <span class="item"><span class="swatch" style="background:var(--s1)"></span> low measurement</span>
+              <span class="item"><span class="swatch" style="background:var(--s2)"></span> high measurement</span>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Permutation importance</h3>
+            <div class="card-sub">Drop in <em>recall</em> when a feature is shuffled · 30 repeats · ±1 SD</div>
+            <div class="chart" id="chart-importance"></div>
+            <p class="small mt">Scored on recall, so it answers: <strong>what does the model rely on to catch real cases?</strong></p>
+          </div>
+        </div>
+
+        <div class="grid g2 mt">
+          <div class="card">
+            <h3>Do four views agree?</h3>
+            <div class="card-sub">Permutation, tree impurity, logistic coefficients — and SHAP below</div>
+            <div class="chart" id="chart-consensus"></div>
+            <div class="legend">
+              <span class="item"><span class="swatch" style="background:var(--s1)"></span> Permutation</span>
+              <span class="item"><span class="swatch" style="background:var(--s2)"></span> Impurity</span>
+              <span class="item"><span class="swatch" style="background:var(--s3)"></span> |Logistic coef|</span>
+              <span class="item"><span class="swatch" style="background:var(--s7)"></span> Mean |SHAP|</span>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Direction and magnitude</h3>
+            <div class="card-sub">Standardised logistic coefficients as odds ratios per +1 SD</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Feature</th><th class="num">Coef.</th><th class="num">Odds ratio / SD</th><th>Effect</th></tr></thead>
+                <tbody id="tbl-odds"></tbody>
+              </table>
+            </div>
+            <p class="small mt" id="odds-note">—</p>
+            <div class="callout warning mt"><div class="ct">Importance is not causation</div>These are associations learned from 768 patients of one ancestry.</div>
+          </div>
+        </div>
+
+        <div class="card mt">
+          <h3>How risk moves with each top driver</h3>
+          <div class="card-sub">One feature swept across its range with all others held at the median</div>
+          <div class="grid g3" id="risk-curves"></div>
+        </div>
+      </section>
+
+      <!-- ============================ GENERATIVE AI ========================= -->
+      <section class="view" id="genai">
+        <div class="grid g2">
+          <div class="callout violet" style="margin:0">
+            <div class="ct">Generative layer 1 — synthetic patients</div>
+            Deep generative models (<strong>CTGAN</strong>, a GAN for tables; <strong>TVAE</strong>, a variational
+            autoencoder) and a statistical <strong>Gaussian Copula</strong> learn the distribution of diabetic
+            patients and sample new ones to rebalance training — benchmarked against SMOTE and no augmentation.
+          </div>
+          <div class="callout violet" style="margin:0">
+            <div class="ct">Generative layer 2 — LLM explanations</div>
+            A large language model turns the prediction, exact <strong>SHAP</strong> values and clinical reference
+            bands into a plain-language summary for the patient, with a <strong>clinician-review disclaimer</strong>
+            appended by the server on every response.
+          </div>
+        </div>
+
+        <div class="grid g-3-2 mt">
+          <div class="card gen-card">
+            <h3>Does synthetic data help a recall-first screener?</h3>
+            <div class="card-sub">Same Random Forest, same 5 folds · each variant gets its own recall-first threshold · scored only on real patients</div>
+            <div class="chart" id="chart-synthetic"></div>
+            <div class="legend">
+              <span class="item"><span class="swatch" style="background:var(--s1)"></span> Recall at its recall-first threshold</span>
+              <span class="item"><span class="swatch" style="background:var(--s7)"></span> PR-AUC</span>
+            </div>
+          </div>
+          <div class="card">
+            <h3>The finding</h3>
+            <div class="card-sub">What the measurement says, stated plainly</div>
+            <div id="synthetic-finding" class="small" style="font-size:14px">—</div>
+          </div>
+        </div>
+
+        <div class="card mt">
+          <h3>All six variants</h3>
+          <div class="card-sub">Generators are fitted <strong>inside each training fold only</strong> — a synthetic patient can never leak a validation patient</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Variant</th><th class="num">Synthetic rows / fold</th><th class="num">Recall @0.50</th><th class="num">Precision @0.50</th>
+                <th class="num">Tuned cut-off</th><th class="num">Recall (tuned)</th><th class="num">Precision (tuned)</th>
+                <th class="num">Missed (of 214)</th><th class="num">PR-AUC</th><th style="min-width:240px">How it works</th>
+              </tr></thead>
+              <tbody id="tbl-synthetic"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid g2 mt">
+          <div class="card">
+            <h3>Are the synthetic patients realistic — and private?</h3>
+            <div class="card-sub">Each generator fitted on all 214 training diabetics, 400 patients sampled</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Generator</th><th class="num">Mean KS</th><th class="num">Disc. AUC</th><th class="num">Nearest real</th><th class="num">Copies</th></tr></thead>
+                <tbody id="tbl-fidelity"></tbody>
+              </table>
+            </div>
+            <ul class="clean mt small">
+              <li><strong>KS</strong> — distance between real and synthetic distributions per feature (0 = identical).</li>
+              <li><strong>Discriminator AUC</strong> — can a classifier spot the fakes? 0.5 = indistinguishable.</li>
+              <li><strong>Nearest-real distance</strong> vs <span id="fid-nn">—</span> between real patients: much smaller means the generator is copying people — a privacy risk.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Real vs generated: plasma glucose</h3>
+            <div class="card-sub">Density of the diabetic class — note CTGAN piling patients onto the lower bound</div>
+            <div class="chart" id="chart-dist"></div>
+            <div class="legend" id="dist-legend"></div>
+          </div>
+        </div>
+
+        <div class="card gen-card mt">
+          <div class="card-head">
+            <div>
+              <h3>The LLM explanation pipeline</h3>
+              <div class="card-sub">Built so the language model can only restate numbers the pipeline computed</div>
+            </div>
+            <span class="badge badge-violet" id="llm-status-badge">checking…</span>
+          </div>
+          <div class="flow" style="grid-template-columns:repeat(5,minmax(0,1fr))">
+            <div class="fnode"><div class="fi">1</div><div class="ft">Patient → forest</div><div class="fd">Probability vs the 0.28 cut-off</div></div>
+            <div class="fnode"><div class="fi">2</div><div class="ft">TreeSHAP</div><div class="fd">Exact contributions; they sum to the prediction</div></div>
+            <div class="fnode"><div class="fi">3</div><div class="ft">Structured prompt</div><div class="fd">Numbers + WHO / ADA / Asian-Indian bands only</div></div>
+            <div class="fnode gen"><div class="fi">G2</div><div class="ft">Claude writes</div><div class="fd">Four fixed sections, no diagnosis, no drugs</div></div>
+            <div class="fnode"><div class="fi">5</div><div class="ft">Safety layer</div><div class="fd">Disclaimer appended; template fallback offline</div></div>
+          </div>
+          <div class="grid g3 mt">
+            <div class="callout"><div class="ct">Grounded</div>The model receives only computed values and recognised clinical cut-offs, and is instructed never to invent a statistic.</div>
+            <div class="callout"><div class="ct">Bounded</div>It may not diagnose, prescribe, or blame non-modifiable factors such as age or family history.</div>
+            <div class="callout"><div class="ct">Honest about provenance</div>Every summary is labelled with who wrote it — the LLM or the deterministic template — so the demo never pretends.</div>
+          </div>
+          <p class="small mt">Try it in the <a href="#predictor">Live Predictor</a> → <strong>Explain with AI</strong>.</p>
+        </div>
+      </section>
+
+      <!-- ============================== PREDICTOR =========================== -->
+      <section class="view" id="predictor">
+        <div class="offline-note" id="offline-note">
+          <strong>Offline mode.</strong> The Flask API is not reachable, so scores come from a logistic surrogate in the
+          browser. Start the server with <code>python app/app.py</code> for the deployed Random Forest.
+        </div>
+
+        <div class="predictor">
+          <div class="card">
+            <h3>Patient measurements</h3>
+            <div class="card-sub">Coloured chips show the clinical reference band for each value</div>
+            <div id="pred-fields"></div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="btn-random">Load a real held-out patient</button>
+              <button class="btn" id="btn-reset">Reset to median</button>
+              <button class="btn" id="btn-highrisk">High-risk example</button>
+            </div>
+            <div id="truth-note" class="mt"></div>
+          </div>
+
+          <div class="result-panel">
+            <div class="card">
+              <div class="risk-head">
+                <div class="chart" id="gauge"></div>
+                <div>
+                  <div class="risk-figure" id="pred-percent">—</div>
+                  <div class="small muted">predicted probability of diabetes onset</div>
+                  <div class="risk-band" id="pred-band">—</div>
+                </div>
+              </div>
+              <div class="risk-action" id="pred-action">—</div>
+              <div class="decision-line"><span>Decision at threshold <b id="pred-threshold">—</b></span><b id="pred-decision">—</b></div>
+            </div>
+
+            <div class="card">
+              <h3>Why — SHAP contributions</h3>
+              <div class="card-sub" id="shap-sub">Percentage points each measurement adds to or removes from the model's baseline</div>
+              <div id="pred-contrib"></div>
+            </div>
+
+            <div class="card ai-card">
+              <div class="card-head">
+                <div>
+                  <h3>AI explanation for the patient</h3>
+                  <div class="ai-meta" id="ai-meta"><span class="badge badge-violet">Generative layer</span></div>
+                </div>
+                <button class="btn btn-ai" id="btn-explain">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>
+                  Explain with AI
+                </button>
+              </div>
+              <div id="ai-out"><div class="ai-empty">Press <strong>Explain with AI</strong> to turn this prediction and its SHAP values into a plain-language summary.</div></div>
+            </div>
+
+            <div class="card">
+              <h3>What could change the risk?</h3>
+              <div class="card-sub">The same patient with one modifiable factor moved to a healthy value</div>
+              <div class="whatif" id="whatif">—</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================= IMPACT, ETHICS & INDIA ===================== -->
+      <section class="view" id="impact">
+        <div class="card">
+          <h3>The trade, in people rather than percentages</h3>
+          <div class="card-sub">Per 10,000 patients screened, scaled from the held-out test results</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Outcome</th><th class="num">At 0.50</th><th class="num">Recall-first</th><th class="num">Difference</th><th>Who this is</th></tr></thead>
+              <tbody id="tbl-impact"></tbody>
+            </table>
+          </div>
+          <div class="callout critical mt"><div class="ct">The sentence that justifies the whole design</div><span id="ethics-sentence">—</span></div>
+        </div>
+
+        <div class="grid g-3-2 mt">
+          <div class="card">
+            <h3>Would this work for Indian patients?</h3>
+            <div class="card-sub">Recall carries over under a prevalence shift; precision does not</div>
+            <div class="chart" id="chart-transport"></div>
+            <div class="table-wrap mt">
+              <table>
+                <thead><tr><th>Population</th><th class="num">Prevalence</th><th class="num">Precision</th><th class="num">Missed / 10k</th><th class="num">False alarms / 10k</th><th class="num">Tests per case</th></tr></thead>
+                <tbody id="tbl-transport"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <h3>Re-validation protocol for India</h3>
+              <div class="card-sub">What we would do before any Indian deployment</div>
+              <ol class="clean" id="protocol"></ol>
+            </div>
+            <div class="callout warning" style="margin:0">
+              <div class="ct">Asian-Indian BMI cut-offs</div>
+              Indians develop type-2 diabetes at a lower BMI. The predictor's BMI chip uses the WHO / ICMR action
+              points (overweight ≥ 23, obese ≥ 25) rather than the global 25 / 30.
+            </div>
+            <div class="card" id="external-card" style="display:none">
+              <h3>External validation</h3>
+              <div id="external-out"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt">
+          <h3>Limits we refuse to paper over</h3>
+          <div class="card-sub">Stated in <code>models/model_card.json</code>, shipped beside the weights</div>
+          <div class="grid g2">
+            <ul class="clean">
+              <li><strong>Population.</strong> Every patient is female, of Pima heritage, aged 21+. Anything else is extrapolation.</li>
+              <li><strong>Sample size.</strong> The test set holds <span id="eth-testpos">—</span> positive cases — hence the bootstrap intervals.</li>
+              <li><strong>Synthetic data.</strong> No generator beat class weighting, so the deployed model trains on real patients only.</li>
+            </ul>
+            <ul class="clean">
+              <li><strong>LLM risk.</strong> The language model can be fluent and wrong; it sees only computed numbers, cannot diagnose, and a clinician must review.</li>
+              <li><strong>Automation bias.</strong> The UI shows a probability, a band and an action — never a bare “negative”.</li>
+              <li><strong>Not a diagnosis.</strong> The output ranks patients for a confirmatory blood test. It never replaces one.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card mt">
+          <h3>All generated figures</h3>
+          <div class="card-sub">Rendered by <code>python src/pipeline.py</code> into <code>reports/figures/</code></div>
+          <div class="grid g2" id="figure-gallery"></div>
+        </div>
+      </section>
+
+      <div class="page-foot">
+        <span>Diabetes Risk Screener · recall-first screening triage with a generative explanation layer</span>
+        <span>Pima Indians Diabetes Database · <span id="foot-date">—</span></span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="pager" id="pager">
+  <button id="pg-prev" aria-label="Previous section">←</button>
+  <span class="pg" id="pg-count">1 / 8</span>
+  <button id="pg-next" aria-label="Next section">→</button>
+  <button id="pg-exit" aria-label="Exit presentation" title="Exit (P)">✕</button>
+</div>
+
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
