@@ -147,7 +147,7 @@ const page4 = [
     [2700, 1400, 1550, 1300, 1196, 1600], { boldFirst: true, numeric: true }),
   P([B("Finding. "), "No generator beat class weighting (0.916 recall). CTGAN was worst (0.878, eight more missed): about 170 diabetic patients per fold is too few for a GAN, and its samples are easy to spot (discriminator AUC 0.93). The deployed model trains on real patients only."], { spacing: { before: 120 } }),
   H2("3.5 Generative layer 2 - LLM explanations from SHAP"),
-  P("For each patient, exact TreeSHAP contributions are computed (model baseline + contributions = prediction). These values, together with WHO / ADA glucose and blood-pressure bands and Asian-Indian BMI cut-offs, form a structured prompt. Google Gemini (Flash model via Vertex AI) writes a four-part summary: what the screen found, what is driving it, what could help, and the next step."),
+  P("For each patient, exact TreeSHAP contributions are computed (model baseline + contributions = prediction). These values, together with WHO / ADA glucose and blood-pressure bands and Asian-Indian BMI cut-offs, form a structured prompt. Google Gemini (Flash model via the Gemini API) writes a four-part summary: what the screen found, what is driving it, what could help, and the next step."),
   bullet([B("Grounded: "), "the model receives only computed numbers and is instructed never to invent statistics."]),
   bullet([B("Bounded: "), "it may not diagnose, prescribe medication or blame non-modifiable factors."]),
   bullet([B("Safe and honest: "), "a clinician-review disclaimer is appended by the server to every response; without an API key or network, a deterministic template built from the same SHAP values is used and labelled as such."]),
@@ -167,7 +167,7 @@ const page5 = [
     ["Domain rule + Pipeline", "src/preprocess.py, src/train.py - zeros to NaN; SimpleImputer(median) -> RandomForestClassifier"],
     ["Threshold + evaluation", "src/train.py, src/evaluate.py, src/rigour.py - out-of-fold tuning, bootstrap CIs, calibration, decision curve"],
     ["G1 synthetic patients", "src/synthetic.py - SDV CTGANSynthesizer, TVAESynthesizer, GaussianCopulaSynthesizer vs imblearn SMOTE"],
-    ["TreeSHAP + G2 LLM", "src/genai_explain.py - shap.TreeExplainer, structured prompt, Google Gen AI SDK (Vertex AI), disclaimer, template fallback"],
+    ["TreeSHAP + G2 LLM", "src/genai_explain.py - shap.TreeExplainer, structured prompt, Google Gen AI SDK (Gemini API), disclaimer, template fallback"],
     ["Flask API + dashboard", "app/app.py, app/templates, app/static - /api/predict, /api/explain, eight-view dashboard"]
   ], [2700, 7046], { boldFirst: true }),
   pageBreak()

@@ -74,10 +74,10 @@ pip install -r requirements.txt --extra-index-url https://download.pytorch.org/w
 python src/pipeline.py          # full rebuild: model, metrics, 24 figures  (~6 min, CTGAN/TVAE included)
 python src/pipeline.py --fast   # reuse the cached CTGAN/TVAE comparison    (~2 min)
 python app/app.py               # dashboard at http://127.0.0.1:5000
-python -m pytest -q             # 13 regression tests
+python -m pytest -q             # 17 regression tests
 ```
 
-**LLM explanations (optional).** Copy `.env.example` to `.env` and add `GEMINI_API_KEY=...` (a Vertex AI express-mode key starting `AQ.`, or a Gemini API key).
+**LLM explanations (optional).** Copy `.env.example` to `.env` and add `GEMINI_API_KEY=...` (a Gemini API key from Google AI Studio; set `GOOGLE_GENAI_USE_VERTEXAI=true` to route it via Vertex AI instead).
 Without a key — or without a network in the jury room — the dashboard uses a deterministic template built
 from the same SHAP values, and says so on screen.
 

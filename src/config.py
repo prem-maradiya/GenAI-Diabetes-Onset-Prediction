@@ -98,16 +98,17 @@ def clinical_band(feature: str, value: float) -> dict | None:
 
 
 # Generative layer: the LLM that writes the patient-friendly explanation.
-# Google Gemini via Vertex AI express mode (or a Gemini API key). The key is read
+# Google Gemini via the Gemini Developer API (Vertex AI optional). The key is read
 # from the environment / a git-ignored .env file, so it never lives in the repo.
 # Model IDs change over time: the first candidate the key can use is kept, and
-# GEMINI_MODEL in .env overrides the list.
+# GEMINI_MODEL in .env overrides the list. Ordered for a live demo: measured on
+# 2026-11-21, 3-flash-preview answered in ~2 s and 2.5-flash in ~4 s, while
+# 3.5-flash timed out (504) on repeated calls, so it is the last resort.
 LLM_PROVIDER = "Gemini"
 LLM_MODEL_CANDIDATES = [
-    "gemini-3.5-flash",
-    "gemini-3-flash",
     "gemini-3-flash-preview",
     "gemini-2.5-flash",
+    "gemini-3.5-flash",
 ]
 
 RANDOM_STATE = 42

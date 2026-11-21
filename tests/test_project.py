@@ -151,9 +151,10 @@ def test_api_health_and_status(client):
 
 # ------------------------------------------------------ Gemini LLM layer ---- #
 class _FakeResp:
-    def __init__(self, text, blocked=False):
+    def __init__(self, text, blocked=False, finish="STOP"):
         self.text = text
         self.prompt_feedback = type("F", (), {"block_reason": "SAFETY" if blocked else None})()
+        self.candidates = [type("Cand", (), {"finish_reason": finish})()]
 
 
 def _fake_client(behaviour):
@@ -166,7 +167,8 @@ def _fake_client(behaviour):
             calls.append(model)
             result = behaviour(model)
             if isinstance(result, int):
-                raise errors.ClientError(result, {"error": {"code": result, "message": "x", "status": "NOT_FOUND"}})
+                err = errors.ServerError if result >= 500 else errors.ClientError
+                raise err(result, {"error": {"code": result, "message": "x", "status": "ERR"}})
             return result
 
     return type("C", (), {"models": Models()})(), calls
@@ -185,6 +187,19 @@ def test_gemini_falls_through_unavailable_models(monkeypatch):
     calls.clear()
     ge.llm_summary("prompt")                      # the working model is remembered
     assert calls == ["gemini-2.5-flash"]
+
+
+def test_gemini_skips_timeouts_and_truncated_answers(monkeypatch):
+    import genai_explain as ge
+
+    first, second, third = ge.LLM_MODEL_CANDIDATES[:3]
+    replies = {first: 504, second: _FakeResp("cut off", finish="MAX_TOKENS"), third: _FakeResp("**What** full")}
+    client, calls = _fake_client(lambda m: replies[m])
+    monkeypatch.setattr(ge, "_client", lambda: client)
+    monkeypatch.setattr(ge, "_WORKING_MODEL", [])
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
+    text, model = ge.llm_summary("prompt")
+    assert model == third and calls == [first, second, third]
 
 
 def test_gemini_blocked_or_empty_raises(monkeypatch):

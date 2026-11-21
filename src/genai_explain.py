@@ -197,11 +197,11 @@ def llm_available() -> bool:
 
 @lru_cache(maxsize=1)
 def _client():
-    """Vertex AI express-mode keys start with 'AQ.'; anything else is a Gemini API (AI Studio) key."""
+    """Gemini Developer API by default; set GOOGLE_GENAI_USE_VERTEXAI=true to route the key via Vertex AI."""
     from google import genai
 
-    key = _api_key()
-    return genai.Client(vertexai=key.startswith("AQ."), api_key=key)
+    vertex = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in {"1", "true", "yes"}
+    return genai.Client(vertexai=vertex, api_key=_api_key())
 
 
 _WORKING_MODEL: list[str] = []
@@ -214,32 +214,54 @@ def _candidate_models() -> list[str]:
     return list(dict.fromkeys(_WORKING_MODEL + LLM_MODEL_CANDIDATES))
 
 
+def _thinking(model: str):
+    """Keep the reasoning budget small: these summaries are short and grounded, and
+    an unbounded thinking model can spend the whole output budget before answering."""
+    from google.genai import types
+
+    if model.startswith("gemini-2.5"):
+        return types.ThinkingConfig(thinking_budget=512)
+    if model.startswith("gemini-3"):
+        return types.ThinkingConfig(thinking_level="low")
+    return None
+
+
 def llm_summary(prompt: str, timeout: float = 45.0) -> tuple[str, str]:
     """One Gemini call. Returns (text, model id). Raises on failure so the caller can fall back.
 
     Model IDs change over time, so the first candidate the key can use is
-    remembered; a 404 (model not available) moves on to the next candidate.
+    remembered. A model that is unavailable (404), rate-limited (429), failing
+    server-side (5xx) or that runs out of tokens moves on to the next candidate.
     """
     from google.genai import errors, types
 
-    config = types.GenerateContentConfig(
-        system_instruction=SYSTEM_PROMPT,
-        temperature=0.3,
-        max_output_tokens=2048,
-        http_options=types.HttpOptions(timeout=int(timeout * 1000)),
-    )
     last_error: Exception | None = None
     for model in _candidate_models():
+        config = types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            temperature=0.3,
+            max_output_tokens=4096,
+            thinking_config=_thinking(model),
+            http_options=types.HttpOptions(timeout=int(timeout * 1000), api_version="v1beta"),
+        )
         try:
             response = _client().models.generate_content(model=model, contents=prompt, config=config)
         except errors.ClientError as exc:
-            if getattr(exc, "code", None) == 404:
+            if getattr(exc, "code", None) in (404, 429):
                 last_error = exc
                 continue
             raise
+        except errors.ServerError as exc:
+            last_error = exc
+            continue
         feedback = getattr(response, "prompt_feedback", None)
         if feedback is not None and getattr(feedback, "block_reason", None):
             raise RuntimeError("blocked by safety filter")
+        candidates = getattr(response, "candidates", None) or []
+        finish = str(getattr(candidates[0], "finish_reason", "")) if candidates else ""
+        if "MAX_TOKENS" in finish:
+            last_error = RuntimeError(f"{model} ran out of output tokens")
+            continue
         text = (response.text or "").strip()
         if not text:
             raise RuntimeError("empty response")
